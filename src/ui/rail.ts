@@ -6,6 +6,7 @@ import { F_MIN, F_MAX } from '../physics/modes';
 import { getState, subscribe, setFrequency, setState, type DriveMode } from '../store';
 import { createExplainer } from './explainer';
 import { buildKeyboard, type KeyboardHandle } from './keyboard';
+import { buildVoicePanel, type VoicePanelHandle } from './voicePanel';
 
 export interface RailOptions {
   resonances: number[];
@@ -15,17 +16,20 @@ export interface RailOptions {
   onToggleSound: () => void;
   /** Fired when the user moves the slider (enables resonance gravitation). */
   onSliderInput: () => void;
+  /** Request (or retry) microphone access for Voice mode. */
+  onEnableMic: () => void;
 }
 
 export interface RailHandle {
   keyboard: KeyboardHandle;
+  voice: VoicePanelHandle;
 }
 
 // Modes implemented so far; others render as forthcoming.
 const MODES: Array<{ id: DriveMode; label: string; ready: boolean }> = [
   { id: 'tone', label: 'Tone', ready: true },
   { id: 'composition', label: 'Composition', ready: true },
-  { id: 'voice', label: 'Voice', ready: false },
+  { id: 'voice', label: 'Voice', ready: true },
   { id: 'signature', label: 'Signature', ready: false },
 ];
 
@@ -107,10 +111,13 @@ export function buildRail(root: HTMLElement, opts: RailOptions): RailHandle {
   const kbdPanel = el('div', 'rail__kbd');
   kbdPanel.append(keyboard.el);
 
+  // ── Voice panel (Voice mode) ──────────────────────────────────────────
+  const voice = buildVoicePanel(opts.onEnableMic);
+
   // ── Diagnostics ───────────────────────────────────────────────────────
   const diag = el('div', 'rail__diag');
 
-  root.append(header, modeBar, readout, sliderWrap, scale, kbdPanel, diag);
+  root.append(header, modeBar, readout, sliderWrap, scale, kbdPanel, voice.el, diag);
 
   // ── Live updates ──────────────────────────────────────────────────────
   subscribe((s) => {
@@ -126,9 +133,11 @@ export function buildRail(root: HTMLElement, opts: RailOptions): RailHandle {
 
     for (const [id, b] of modeButtons) b.classList.toggle('is-active', id === s.mode);
     kbdPanel.style.display = s.mode === 'tone' ? '' : 'none';
+    voice.el.style.display = s.mode === 'voice' ? '' : 'none';
+    voice.setStatus(s.micStatus);
   });
 
-  return { keyboard };
+  return { keyboard, voice };
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(

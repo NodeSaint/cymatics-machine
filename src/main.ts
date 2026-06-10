@@ -13,8 +13,9 @@ import { buildRail } from './ui/rail';
 import { engine } from './audio/engine';
 import { ToneVoice } from './audio/tone';
 import { Composition } from './audio/composition';
+import { VoiceInput } from './audio/voice';
 
-const READY_MODES = new Set<DriveMode>(['tone', 'composition']); // expands as modes come online
+const READY_MODES = new Set<DriveMode>(['tone', 'composition', 'voice']); // expands as modes come online
 const GRAV_WINDOW = 26; // Hz — capture range of resonance gravitation
 const GRAV_EASE = 0.1; // per-frame easing toward a resonance
 
@@ -44,7 +45,26 @@ function boot(): void {
   // ── Audio (Tone + Composition) ────────────────────────────────────────
   let toneVoice: ToneVoice | null = null;
   let composition: Composition | null = null;
+  let voiceInput: VoiceInput | null = null;
   let kickBoost = 0; // brief jitter lift after a kick, decays each frame
+
+  async function startVoice(): Promise<void> {
+    if (!voiceInput) voiceInput = new VoiceInput();
+    setState({ micStatus: 'requesting' });
+    try {
+      const ctx = await engine.start();
+      await voiceInput.start(ctx);
+      setState({ micStatus: 'granted' });
+    } catch {
+      setState({ micStatus: 'denied' });
+    }
+  }
+
+  function stopVoice(): void {
+    voiceInput?.stop();
+    voiceInput = null;
+    setState({ micStatus: 'idle' });
+  }
 
   async function syncAudio(): Promise<void> {
     const s = getState();
@@ -92,13 +112,19 @@ function boot(): void {
     onNote: playNote,
     onToggleSound: () => setState({ audioOn: !getState().audioOn }),
     onSliderInput: () => markInput(true),
+    onEnableMic: () => void startVoice(),
   });
 
   // React to audio-relevant state transitions.
   let prevAudioOn = getState().audioOn;
   let prevMode = getState().mode;
   subscribe((s) => {
-    if (s.audioOn !== prevAudioOn || s.mode !== prevMode) {
+    const modeChanged = s.mode !== prevMode;
+    if (s.audioOn !== prevAudioOn || modeChanged) {
+      if (modeChanged) {
+        if (prevMode === 'voice') stopVoice();
+        if (s.mode === 'voice') void startVoice(); // request mic only on opening Voice
+      }
       prevAudioOn = s.audioOn;
       prevMode = s.mode;
       void syncAudio();
@@ -154,6 +180,16 @@ function boot(): void {
     }
     kickBoost *= Math.pow(0.9, dtScale);
 
+    // Voice mode: detect pitch and drive the plate; silence freezes the figure.
+    let voiceSilent = false;
+    if (s.mode === 'voice' && voiceInput && voiceInput.status === 'granted' && engine.context) {
+      voiceInput.update(engine.context.sampleRate);
+      const vs = voiceInput.state;
+      if (!vs.silent) setFrequency(vs.freq);
+      voiceSilent = vs.silent;
+      rail.voice.setVoice(vs);
+    }
+
     field.setFrequency(getState().frequency);
     if (field.dominant) {
       const d = getState().dominant;
@@ -163,7 +199,8 @@ function boot(): void {
     }
     if (toneVoice) toneVoice.setFrequency(getState().frequency);
 
-    const motion = (s.reducedMotion ? 0.45 : 1) + (s.reducedMotion ? 0 : kickBoost);
+    const baseMotion = voiceSilent ? 0 : s.reducedMotion ? 0.45 : 1;
+    const motion = baseMotion + (s.reducedMotion ? 0 : kickBoost);
     grains.update(field, dtScale, motion);
     renderer.draw(grains.pos, grains.speed, grains.count, !s.reducedMotion);
 
@@ -195,6 +232,9 @@ function boot(): void {
       },
       get compLags() {
         return lagLog.slice();
+      },
+      get voice() {
+        return voiceInput ? { ...voiceInput.state, status: voiceInput.status } : null;
       },
     };
   }

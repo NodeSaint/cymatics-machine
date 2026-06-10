@@ -58,6 +58,33 @@ genuine explainer (nodal lines, why sand gathers, what (n,m) means, what is appr
 - Identical word → pixel-stable identical Signature PNG across machines.
 - Offline-capable after first load.
 
+## Session note — 2026-06-10 (paused mid Step 4)
+
+Steps 1–3 are live at https://nodesaint.github.io/cymatics-machine/ (committed, merged to `main`,
+deployed, verified in production). Repo is `NodeSaint/cymatics-machine` (the spec's `nuvixstudio`
+owner doesn't exist on GitHub under this login — user confirmed NodeSaint).
+
+**Step 4 (Voice) is code-complete and builds clean, committed to `dev` as WIP (not deployed):**
+`src/audio/pitch.ts` (autocorrelation + clarity), `src/audio/voice.ts` (mic, confidence gate,
+silence→freeze), `src/ui/voicePanel.ts` (listening/denial UI), wired into main/rail/store.
+
+**Blocker to resolve first thing:** the headless fake-mic verification shows `level: 0` (analyser
+reads silence) so the pitch test can't confirm end-to-end. The detector itself is correct (reported
+220 Hz, 0 cents when audio flowed). This is a *test-harness* issue, not proven app logic:
+- Next: probe `window.__cym.audioState` + sample `window.__cym.voice.level` over ~3 s in Voice mode.
+- Suspect the `--use-file-for-fake-audio-capture` flag (clean the messy `.replace('%noloop','')`
+  in `tools/voice.mjs`) or the AudioContext not running. WAVs at `/tmp/tone220.wav`,
+  `/tmp/tone440.wav` (48 kHz mono 16-bit). Verify the analyser graph is pulled
+  (source→analyser→sink(0)→destination) and the context is resumed.
+- Once green: commit/merge/deploy Step 4.
+
+**Then:** Step 5 (Sonic Signature + PNG export — deterministic letter→freq table, ~8 s morph, hold,
+pixel-stable 1080² PNG), Step 6 (circular Bessel plate, stretch).
+
+Verification tooling (all headless/silent — null audio sink): `tools/convergence.ts` (grains),
+`tools/drive.mjs` (Tone via CDP), `tools/sync.ts` (beat-sync, 24/24 within a frame),
+`tools/composition.mjs`, `tools/voice.mjs` (fake-mic — needs the flag fix above).
+
 ## Source map
 
 - `src/main.ts` — boot, render loop, mode wiring.

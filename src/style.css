@@ -310,6 +310,85 @@ canvas#plate {
   background: linear-gradient(#a8721f, #6b4a12);
 }
 
+/* ── Voice panel ───────────────────────────────────────────────────────── */
+.voice {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #0e0e11;
+  border: 1px solid var(--panel-edge);
+  border-radius: 7px;
+}
+
+.voice__status {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+}
+
+.voice[data-status='denied'] .voice__status {
+  color: #e8a87c;
+}
+
+.voice__meters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.voice__meter {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.voice__meter-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.voice__bar {
+  height: 6px;
+  border-radius: 3px;
+  background: #1c1c20;
+  overflow: hidden;
+}
+
+.voice__fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--brass-2), var(--amber));
+  transition: width 0.08s linear;
+}
+
+.voice.is-silent .voice__fill {
+  background: #3a3a40;
+}
+
+.voice__enable {
+  align-self: flex-start;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: #14110a;
+  background: linear-gradient(var(--brass-3), var(--brass-2));
+  border: 0;
+  border-radius: 6px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.voice__enable:hover {
+  filter: brightness(1.08);
+}
+
 /* ── Explainer dialog ──────────────────────────────────────────────────── */
 .explain {
   border: 1px solid var(--panel-edge);
