@@ -12,8 +12,9 @@ import { getState, setState, setFrequency, subscribe, type DriveMode } from './s
 import { buildRail } from './ui/rail';
 import { engine } from './audio/engine';
 import { ToneVoice } from './audio/tone';
+import { Composition } from './audio/composition';
 
-const READY_MODES = new Set<DriveMode>(['tone']); // expands as modes come online
+const READY_MODES = new Set<DriveMode>(['tone', 'composition']); // expands as modes come online
 const GRAV_WINDOW = 26; // Hz — capture range of resonance gravitation
 const GRAV_EASE = 0.1; // per-frame easing toward a resonance
 
@@ -40,23 +41,36 @@ function boot(): void {
   setState({ renderer: renderer.kind });
   const grains = new Grains(renderer.capacity);
 
-  // ── Audio (Tone mode) ─────────────────────────────────────────────────
+  // ── Audio (Tone + Composition) ────────────────────────────────────────
   let toneVoice: ToneVoice | null = null;
+  let composition: Composition | null = null;
+  let kickBoost = 0; // brief jitter lift after a kick, decays each frame
 
   async function syncAudio(): Promise<void> {
     const s = getState();
     const wantTone = s.audioOn && s.mode === 'tone';
-    if (wantTone && !toneVoice) {
-      const ctx = await engine.start();
-      toneVoice = new ToneVoice(ctx, engine.master);
+    const wantComp = s.audioOn && s.mode === 'composition';
+
+    if ((wantTone || wantComp) && !engine.ready) await engine.start();
+
+    if (wantTone && !toneVoice && engine.context) {
+      toneVoice = new ToneVoice(engine.context, engine.master);
       toneVoice.start(s.frequency);
-      engine.fadeMaster(0.85);
     } else if (!wantTone && toneVoice) {
-      engine.fadeMaster(0);
       const v = toneVoice;
       toneVoice = null;
       setTimeout(() => v.stop(), 170);
     }
+
+    if (wantComp && !composition && engine.context) {
+      composition = new Composition(engine.context, engine.master);
+      composition.start();
+    } else if (!wantComp && composition) {
+      composition.stop();
+      composition = null;
+    }
+
+    engine.fadeMaster(wantTone || wantComp ? 0.85 : 0);
   }
 
   let lastInputAt = 0;
@@ -124,6 +138,22 @@ function boot(): void {
       }
     }
 
+    // Composition drives the plate: drain beat-synced events when the audio
+    // clock passes their scheduled time (within a frame).
+    if (composition) {
+      const aNow = engine.now;
+      for (const e of composition.drain(aNow)) {
+        if (import.meta.env.DEV) recordLag(e.kind, aNow - e.t, dtMs);
+        if (e.kind === 'note' && e.freq) {
+          setFrequency(e.freq);
+        } else if (e.kind === 'kick') {
+          grains.jolt(e.strength ?? 0.03); // radial shatter
+          kickBoost = Math.max(kickBoost, (e.strength ?? 0.03) * 9);
+        }
+      }
+    }
+    kickBoost *= Math.pow(0.9, dtScale);
+
     field.setFrequency(getState().frequency);
     if (field.dominant) {
       const d = getState().dominant;
@@ -133,7 +163,7 @@ function boot(): void {
     }
     if (toneVoice) toneVoice.setFrequency(getState().frequency);
 
-    const motion = s.reducedMotion ? 0.45 : 1;
+    const motion = (s.reducedMotion ? 0.45 : 1) + (s.reducedMotion ? 0 : kickBoost);
     grains.update(field, dtScale, motion);
     renderer.draw(grains.pos, grains.speed, grains.count, !s.reducedMotion);
 
@@ -163,8 +193,24 @@ function boot(): void {
       get audioState() {
         return engine.context?.state ?? 'none';
       },
+      get compLags() {
+        return lagLog.slice();
+      },
     };
   }
+}
+
+// Beat-sync diagnostics: lag (ms) between an event's scheduled audio time and
+// the frame it fired on, plus that frame's duration. Lag should be ≤ one frame.
+interface LagSample {
+  kind: string;
+  lagMs: number;
+  frameMs: number;
+}
+const lagLog: LagSample[] = [];
+function recordLag(kind: string, lagSec: number, frameMs: number): void {
+  lagLog.push({ kind, lagMs: lagSec * 1000, frameMs });
+  if (lagLog.length > 400) lagLog.shift();
 }
 
 /** Nearest resonance frequency to f (linear scan over the small set). */

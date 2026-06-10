@@ -22,8 +22,9 @@ visually confirmed in production. Owner is `NodeSaint` (spec's `nuvixstudio` doe
 - [x] Web Audio sine + soft 2nd harmonic; keyboard one octave; resonance gravitation; readout; explainer.
 - [x] Verified via CDP (`tools/drive.mjs`): AudioContext running, exact note pitch, explainer opens.
 
-## Step 3 — Composition
-- [ ] Lookahead scheduler; synth voices; melody retune; kick jolts; sidechain.
+## Step 3 — Composition  ✅
+- [x] Lookahead scheduler; synth voices; melody retune; kick jolts; sidechain.
+- [x] Verified: 24/24 events within one frame (tools/sync.ts); browser run confirms retune + kicks.
 
 ## Step 4 — Voice
 - [ ] getUserMedia; autocorrelation + confidence gate; meter; graceful denial; silence freeze.

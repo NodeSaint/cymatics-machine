@@ -24,7 +24,7 @@ export interface RailHandle {
 // Modes implemented so far; others render as forthcoming.
 const MODES: Array<{ id: DriveMode; label: string; ready: boolean }> = [
   { id: 'tone', label: 'Tone', ready: true },
-  { id: 'composition', label: 'Composition', ready: false },
+  { id: 'composition', label: 'Composition', ready: true },
   { id: 'voice', label: 'Voice', ready: false },
   { id: 'signature', label: 'Signature', ready: false },
 ];

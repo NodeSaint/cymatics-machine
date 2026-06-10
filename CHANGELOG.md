@@ -4,6 +4,21 @@ All notable changes to the Cymatics Machine. Dates are ISO (YYYY-MM-DD). British
 
 ## [Unreleased] — dev
 
+### 2026-06-10 — `dev` → `main` — Step 3: Composition mode
+
+- **Lookahead scheduler** (`audio/scheduler.ts`): a coarse timer queues each step with a
+  sample-accurate Web Audio timestamp; the same timestamps drive the visual event queue.
+- **Synth voices** (`audio/voices.ts`): kick (pitch-dropped sine), hat (highpassed noise), bass
+  (filtered saw), lead (detuned saws). Deterministic noise buffer (no `Math.random`).
+- **Composition** (`audio/composition.ts`): generative ~90 s loop over an i–VI–III–VII progression
+  in A minor with per-bar melodic variation. Melody notes retune the plate; kicks push a radial
+  jolt that shatters and re-forms the figure; a sidechain ducks the musical bus off every kick.
+  Tempo-synced delay on the lead. Master limiter added so layered voices never clip.
+- Render loop drains beat-synced events when the audio clock passes them (`grains.jolt` + retune).
+- Verified: deterministic 60 fps simulation (`tools/sync.ts`) shows **24/24 events within one frame**
+  (median lag 8.4 ms, max 14.8 ms < 16.8 ms). Browser test confirms AudioContext running, melody
+  retuning the plate across distinct figures, kicks firing (`tools/composition.mjs`).
+
 ### 2026-06-10 — `dev` → `main` — Step 2: Tone mode
 
 - **Web Audio engine** (`audio/engine.ts`): lazy `AudioContext` on first gesture, master bus with

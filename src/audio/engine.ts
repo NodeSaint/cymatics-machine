@@ -32,7 +32,14 @@ export class AudioEngine {
       this.ctx = new Ctor({ latencyHint: 'interactive' });
       this.masterGain = this.ctx.createGain();
       this.masterGain.gain.value = 0; // ramped up by fadeMaster
-      this.masterGain.connect(this.ctx.destination);
+      // Gentle limiter so layered Composition voices never clip.
+      const limiter = this.ctx.createDynamicsCompressor();
+      limiter.threshold.value = -6;
+      limiter.knee.value = 6;
+      limiter.ratio.value = 12;
+      limiter.attack.value = 0.003;
+      limiter.release.value = 0.18;
+      this.masterGain.connect(limiter).connect(this.ctx.destination);
     }
     if (this.ctx.state === 'suspended') await this.ctx.resume();
     return this.ctx;
