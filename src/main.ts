@@ -14,8 +14,11 @@ import { engine } from './audio/engine';
 import { ToneVoice } from './audio/tone';
 import { Composition } from './audio/composition';
 import { VoiceInput } from './audio/voice';
+import { signatureFrequencies } from './signature';
+import { exportSignaturePNG, renderSignature } from './export';
 
-const READY_MODES = new Set<DriveMode>(['tone', 'composition', 'voice']); // expands as modes come online
+const READY_MODES = new Set<DriveMode>(['tone', 'composition', 'voice', 'signature']);
+const SIGNATURE_DURATION = 8; // seconds for the performed morph
 const GRAV_WINDOW = 26; // Hz — capture range of resonance gravitation
 const GRAV_EASE = 0.1; // per-frame easing toward a resonance
 
@@ -66,9 +69,21 @@ function boot(): void {
     setState({ micStatus: 'idle' });
   }
 
+  // ── Sonic Signature morph ─────────────────────────────────────────────
+  let sigMorph: { freqs: number[]; start: number; done: boolean } | null = null;
+
+  function performSignature(word: string): void {
+    const freqs = signatureFrequencies(word);
+    if (!freqs.length) return;
+    sigMorph = { freqs, start: performance.now(), done: false };
+    setState({ mode: 'signature' });
+    setFrequency(freqs[0]);
+  }
+
   async function syncAudio(): Promise<void> {
     const s = getState();
-    const wantTone = s.audioOn && s.mode === 'tone';
+    // Tone voice also performs the Signature morph audibly.
+    const wantTone = s.audioOn && (s.mode === 'tone' || s.mode === 'signature');
     const wantComp = s.audioOn && s.mode === 'composition';
 
     if ((wantTone || wantComp) && !engine.ready) await engine.start();
@@ -113,6 +128,8 @@ function boot(): void {
     onToggleSound: () => setState({ audioOn: !getState().audioOn }),
     onSliderInput: () => markInput(true),
     onEnableMic: () => void startVoice(),
+    onPerformSignature: performSignature,
+    onExportSignature: (word) => exportSignaturePNG(word, modes),
   });
 
   // React to audio-relevant state transitions.
@@ -180,6 +197,25 @@ function boot(): void {
     }
     kickBoost *= Math.pow(0.9, dtScale);
 
+    // Signature mode: glide through the word's frequencies over ~8 s, then hold.
+    if (s.mode === 'signature' && sigMorph && !sigMorph.done) {
+      const seq = sigMorph.freqs;
+      const t = (now - sigMorph.start) / 1000;
+      if (t >= SIGNATURE_DURATION) {
+        setFrequency(seq[seq.length - 1]);
+        sigMorph.done = true;
+        rail.signature.markPerformed();
+      } else {
+        const p = (t / SIGNATURE_DURATION) * seq.length;
+        const i = Math.min(seq.length - 1, Math.floor(p));
+        const frac = p - i;
+        const a = seq[i];
+        const b = seq[Math.min(i + 1, seq.length - 1)];
+        const e = frac * frac * (3 - 2 * frac); // smoothstep glide
+        setFrequency(a + (b - a) * e);
+      }
+    }
+
     // Voice mode: detect pitch and drive the plate; silence freezes the figure.
     let voiceSilent = false;
     if (s.mode === 'voice' && voiceInput && voiceInput.status === 'granted' && engine.context) {
@@ -235,6 +271,9 @@ function boot(): void {
       },
       get voice() {
         return voiceInput ? { ...voiceInput.state, status: voiceInput.status } : null;
+      },
+      signaturePNG(word: string) {
+        return renderSignature(word, modes).toDataURL('image/png');
       },
     };
   }

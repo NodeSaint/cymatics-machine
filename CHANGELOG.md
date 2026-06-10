@@ -4,6 +4,24 @@ All notable changes to the Cymatics Machine. Dates are ISO (YYYY-MM-DD). British
 
 ## [Unreleased] — dev
 
+### 2026-06-10 — `dev` → `main` — Step 5: Sonic Signature + PNG export
+
+- **Deterministic letter→frequency map** (`signature.ts`): letters/digits land on an A-minor
+  pentatonic scale (`code % scale` so adjacent letters differ), with ±1-step position weighting to
+  break collisions — so ABBA ≠ BABA. Pure: same word ⇒ same sequence. `cleanInput` (live, keeps
+  trailing space for multi-word names) vs `sanitiseWord` (final, trimmed).
+- **Reproducible figure + PNG** (`export.ts`): `simulateSignature` runs a fixed-seed, fixed-step
+  morph (no `Math.random`/time) → identical grain positions every run. `renderSignature` draws the
+  1080×1080 card — additive grains, brass bezel, bottom scrim, stamped with the word, the frequency
+  sequence, and "CYMATICS MACHINE" (manual letter-tracking, portable). `exportSignaturePNG` downloads.
+- **Signature panel** (`ui/signaturePanel.ts`): word field (≤12), Perform, Export PNG.
+- **Performed morph**: glides through the word's frequencies over ~8 s (smoothstep) then holds the
+  final figure; the Tone voice performs it audibly when sound is on.
+- Verified: determinism unit tests (`tools/signature.ts`) — same word ⇒ identical fingerprint, 5/5
+  distinct words distinct. In-browser (`tools/`): PNG is 1080×1080, **byte-identical for the same
+  word across calls**, differs between words; live morph glides then holds (330→220→262→220 → hold).
+  Determinism caveat (per-engine) documented in ISSUES.
+
 ### 2026-06-10 — `dev` → `main` — Step 4: Voice mode
 
 - **Autocorrelation pitch detection** (`audio/pitch.ts`): full ACF, first-trough skip to avoid the

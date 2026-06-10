@@ -7,6 +7,7 @@ import { getState, subscribe, setFrequency, setState, type DriveMode } from '../
 import { createExplainer } from './explainer';
 import { buildKeyboard, type KeyboardHandle } from './keyboard';
 import { buildVoicePanel, type VoicePanelHandle } from './voicePanel';
+import { buildSignaturePanel, type SignaturePanelHandle } from './signaturePanel';
 
 export interface RailOptions {
   resonances: number[];
@@ -18,11 +19,16 @@ export interface RailOptions {
   onSliderInput: () => void;
   /** Request (or retry) microphone access for Voice mode. */
   onEnableMic: () => void;
+  /** Perform a word's signature morph. */
+  onPerformSignature: (word: string) => void;
+  /** Export the reproducible signature PNG for a word. */
+  onExportSignature: (word: string) => void;
 }
 
 export interface RailHandle {
   keyboard: KeyboardHandle;
   voice: VoicePanelHandle;
+  signature: SignaturePanelHandle;
 }
 
 // Modes implemented so far; others render as forthcoming.
@@ -30,7 +36,7 @@ const MODES: Array<{ id: DriveMode; label: string; ready: boolean }> = [
   { id: 'tone', label: 'Tone', ready: true },
   { id: 'composition', label: 'Composition', ready: true },
   { id: 'voice', label: 'Voice', ready: true },
-  { id: 'signature', label: 'Signature', ready: false },
+  { id: 'signature', label: 'Signature', ready: true },
 ];
 
 export function buildRail(root: HTMLElement, opts: RailOptions): RailHandle {
@@ -114,10 +120,13 @@ export function buildRail(root: HTMLElement, opts: RailOptions): RailHandle {
   // ── Voice panel (Voice mode) ──────────────────────────────────────────
   const voice = buildVoicePanel(opts.onEnableMic);
 
+  // ── Signature panel (Signature mode) ──────────────────────────────────
+  const signature = buildSignaturePanel(opts.onPerformSignature, opts.onExportSignature);
+
   // ── Diagnostics ───────────────────────────────────────────────────────
   const diag = el('div', 'rail__diag');
 
-  root.append(header, modeBar, readout, sliderWrap, scale, kbdPanel, voice.el, diag);
+  root.append(header, modeBar, readout, sliderWrap, scale, kbdPanel, voice.el, signature.el, diag);
 
   // ── Live updates ──────────────────────────────────────────────────────
   subscribe((s) => {
@@ -135,9 +144,10 @@ export function buildRail(root: HTMLElement, opts: RailOptions): RailHandle {
     kbdPanel.style.display = s.mode === 'tone' ? '' : 'none';
     voice.el.style.display = s.mode === 'voice' ? '' : 'none';
     voice.setStatus(s.micStatus);
+    signature.el.style.display = s.mode === 'signature' ? '' : 'none';
   });
 
-  return { keyboard, voice };
+  return { keyboard, voice, signature };
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(
