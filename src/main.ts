@@ -360,4 +360,15 @@ function installKeyboard(handleNote: (char: string) => boolean, markInput: () =>
   });
 }
 
+/** Register the service worker (production only) for offline capability. */
+function registerServiceWorker(): void {
+  if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return;
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {
+      /* offline support is a progressive enhancement */
+    });
+  });
+}
+
 boot();
+registerServiceWorker();
