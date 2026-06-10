@@ -34,8 +34,9 @@ visually confirmed in production. Owner is `NodeSaint` (spec's `nuvixstudio` doe
 - [x] Letter→freq table; ~8 s morph; hold; pixel-stable 1080² PNG export.
 - [x] Verified: same word ⇒ byte-identical PNG (tools/signature.ts + in-browser); ABBA≠BABA.
 
-## Step 6 — Circle plate (stretch)
-- [ ] Bessel modes second instrument.
+## Step 6 — Circle plate (Bessel, stretch)  ✅
+- [x] Bessel modes second instrument; geometry toggle; disk containment.
+- [x] Verified: 24 modes, ~1.5 s convergence, grains stay in disk, 24 distinct figures.
 
 ## Review
 _(filled at end of each step)_

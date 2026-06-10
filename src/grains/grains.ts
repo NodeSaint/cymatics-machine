@@ -97,7 +97,7 @@ export class Grains {
    * roughly frame-rate independent. `motion` ∈ [0,1] globally scales jitter
    * (reduced-motion lowers it; silence in Voice mode can freeze it at 0).
    */
-  update(field: Field, dtScale: number, motion = 1): void {
+  update(field: Field, dtScale: number, motion = 1, shape: 'square' | 'circle' = 'square'): void {
     const { pos, vel, speed, count, grad, rand, config } = this;
     const dt = dtScale < 0.25 ? 0.25 : dtScale > 3 ? 3 : dtScale;
     const descent = config.descent * dt;
@@ -136,20 +136,35 @@ export class Grains {
       x += vx;
       y += vy;
 
-      // 3. wall containment — reflect softly so grains pool at the edges, not stick.
-      if (x < 0) {
-        x = -x;
-        vx = -vx * 0.4;
-      } else if (x > 1) {
-        x = 2 - x;
-        vx = -vx * 0.4;
-      }
-      if (y < 0) {
-        y = -y;
-        vy = -vy * 0.4;
-      } else if (y > 1) {
-        y = 2 - y;
-        vy = -vy * 0.4;
+      // 3. containment — reflect softly so grains pool at the edge, not stick.
+      if (shape === 'circle') {
+        const dx = x - 0.5;
+        const dy = y - 0.5;
+        const d = Math.hypot(dx, dy);
+        if (d > 0.5) {
+          const nx = dx / d;
+          const ny = dy / d;
+          x = 0.5 + nx * (1 - d); // reflect back inside the disk
+          y = 0.5 + ny * (1 - d);
+          const vn = vx * nx + vy * ny; // remove + damp the outward velocity
+          vx -= 1.4 * vn * nx;
+          vy -= 1.4 * vn * ny;
+        }
+      } else {
+        if (x < 0) {
+          x = -x;
+          vx = -vx * 0.4;
+        } else if (x > 1) {
+          x = 2 - x;
+          vx = -vx * 0.4;
+        }
+        if (y < 0) {
+          y = -y;
+          vy = -vy * 0.4;
+        } else if (y > 1) {
+          y = 2 - y;
+          vy = -vy * 0.4;
+        }
       }
 
       pos[ix] = x;

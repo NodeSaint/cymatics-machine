@@ -4,6 +4,28 @@ All notable changes to the Cymatics Machine. Dates are ISO (YYYY-MM-DD). British
 
 ## [Unreleased] — dev
 
+### 2026-06-10 — `dev` → `main` — Step 6 (stretch): circular Bessel plate
+
+- **Bessel maths** (`physics/bessel.ts`): `J_n` via a stable ratio-form series and its positive
+  zeros by scan + bisection (verified against known values: J0(1)=0.765198, j0,1=2.4048…).
+- **Circular modes** (`physics/circleModes.ts`): `u_nm(r,θ) = J_n(j_nm·r)·cos(nθ)` (n nodal
+  diameters, m nodal circles), built as the same `Mode` shape so the whole Field/grain/render stack
+  is reused — only the basis and the containment differ.
+- **Circular grain containment** (`grains.ts`): grains reflect at the disk rim instead of square walls.
+- **Geometry toggle** in the rail (□ square / ○ circle); the slider's resonance ticks swap with it.
+- Verified (`tools/circle.ts` + `tools/bessel-test.ts`): 24 circular modes, ~1.5 s convergence,
+  grains stay inside the disk (outside% → 0), and a sweep surfaces 24 distinct figures. Visually
+  confirmed (mode (4,1) shows four nodal diameters within the disk).
+
+### 2026-06-10 — `dev` → `main` — Offline capability (acceptance complete)
+
+- Service worker (`public/sw.js`): network-first for navigations (deploys stay fresh), cache-first
+  for immutable hashed assets — the app shell runs with no network after first load. Registered in
+  production only (`src/main.ts`).
+- Verified on production: with the network emulated offline, reloading the live site renders the
+  full app from cache (SW controlling; canvas + readout present). `sw.js` serves as
+  `application/javascript` on GitHub Pages. **All acceptance criteria now met and live.**
+
 ### 2026-06-10 — `dev` → `main` — Step 5: Sonic Signature + PNG export
 
 - **Deterministic letter→frequency map** (`signature.ts`): letters/digits land on an A-minor

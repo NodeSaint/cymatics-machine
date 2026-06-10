@@ -127,6 +127,11 @@ canvas#plate {
   background: #221c12;
 }
 
+.rail__geom.is-circle {
+  color: var(--sand);
+  border-color: var(--brass-2);
+}
+
 /* mode selector */
 .rail__modes {
   display: flex;

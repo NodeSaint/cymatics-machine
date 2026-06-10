@@ -1,0 +1,15 @@
+import { besselJ, besselZeros } from '../src/physics/bessel';
+const approx=(a:number,b:number,t=1e-3)=>Math.abs(a-b)<t;
+let fail=0; const ok=(c:boolean,m:string)=>{console.log((c?'  ok':'FAIL')+'  '+m);if(!c)fail++;};
+ok(approx(besselJ(0,0),1),'J0(0)=1');
+ok(approx(besselJ(1,0),0),'J1(0)=0');
+ok(approx(besselJ(0,1),0.7651977),'J0(1) → '+besselJ(0,1).toFixed(6));
+ok(approx(besselJ(1,1),0.4400506),'J1(1) → '+besselJ(1,1).toFixed(6));
+ok(approx(besselJ(2,5),0.0465651),'J2(5) → '+besselJ(2,5).toFixed(6));
+ok(approx(besselJ(0,15),-0.0142245),'J0(15) → '+besselJ(0,15).toFixed(6));
+const z0=besselZeros(0,4); console.log('J0 zeros:', z0.map(z=>z.toFixed(4)).join(', '));
+ok(approx(z0[0],2.4048),'j0,1'); ok(approx(z0[1],5.5201),'j0,2'); ok(approx(z0[3],11.7915),'j0,4');
+const z1=besselZeros(1,3); console.log('J1 zeros:', z1.map(z=>z.toFixed(4)).join(', '));
+ok(approx(z1[0],3.8317),'j1,1'); ok(approx(z1[2],10.1735),'j1,3');
+console.log(fail===0?'\nALL PASS':'\n'+fail+' FAIL');
+process.exit(fail?1:0);

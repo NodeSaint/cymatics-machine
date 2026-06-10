@@ -47,7 +47,7 @@ genuine explainer (nodal lines, why sand gathers, what (n,m) means, what is appr
 
 ## Build order & status
 
-1. ✅ Field + grains + slider.   2. ✅ Tone mode.   3. ✅ Composition.   4. ✅ Voice.   5. ✅ Sonic Signature.   6. ⬜ Circle plate (stretch).
+1. ✅ Field + grains + slider.   2. ✅ Tone mode.   3. ✅ Composition.   4. ✅ Voice.   5. ✅ Sonic Signature.   6. ✅ Circle plate (Bessel, stretch).
 
 ## Acceptance
 

@@ -15,6 +15,8 @@ export interface State {
   audioOn: boolean;
   /** Microphone permission state for Voice mode. */
   micStatus: 'idle' | 'requesting' | 'granted' | 'denied';
+  /** Plate geometry — square free plate or circular Bessel plate. */
+  geometry: 'square' | 'circle';
   /** prefers-reduced-motion — lowers jitter, disables glow pulse. */
   reducedMotion: boolean;
   /** Renderer in use, for the diagnostics line. */
@@ -31,6 +33,7 @@ const state: State = {
   dominant: null,
   audioOn: false,
   micStatus: 'idle',
+  geometry: 'square',
   reducedMotion:
     typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches,
   renderer: 'webgl',

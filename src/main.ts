@@ -3,6 +3,7 @@
 
 import './style.css';
 import { buildModes, resonanceFrequencies, F_MIN, F_MAX } from './physics/modes';
+import { buildCircleModes } from './physics/circleModes';
 import { Field } from './physics/field';
 import { Grains } from './grains/grains';
 import { type Renderer } from './render/renderer';
@@ -27,13 +28,20 @@ function boot(): void {
   const railRoot = document.getElementById('rail') as HTMLElement;
 
   // ── Physics ───────────────────────────────────────────────────────────
-  const modes = buildModes();
-  const field = new Field(modes);
-  const resonances = resonanceFrequencies(modes);
+  // Two instruments share all the machinery: a square free plate and a circular
+  // Bessel plate. The active one is selected by store.geometry.
+  const squareModes = buildModes();
+  const circleModes = buildCircleModes();
+  const squareField = new Field(squareModes);
+  const circleField = new Field(circleModes);
+  const squareRes = resonanceFrequencies(squareModes);
+  const circleRes = resonanceFrequencies(circleModes);
+  const activeField = () => (getState().geometry === 'circle' ? circleField : squareField);
+  const activeRes = () => (getState().geometry === 'circle' ? circleRes : squareRes);
 
   const initialF = Number(new URLSearchParams(location.search).get('f'));
   if (Number.isFinite(initialF) && initialF > 0) setFrequency(initialF);
-  field.setFrequency(getState().frequency);
+  activeField().setFrequency(getState().frequency);
 
   // ── Renderer ──────────────────────────────────────────────────────────
   let renderer: Renderer;
@@ -123,13 +131,24 @@ function boot(): void {
 
   // ── UI ────────────────────────────────────────────────────────────────
   const rail = buildRail(railRoot, {
-    resonances,
+    resonances: squareRes,
     onNote: playNote,
     onToggleSound: () => setState({ audioOn: !getState().audioOn }),
     onSliderInput: () => markInput(true),
     onEnableMic: () => void startVoice(),
     onPerformSignature: performSignature,
-    onExportSignature: (word) => exportSignaturePNG(word, modes),
+    onExportSignature: (word) => exportSignaturePNG(word, squareModes),
+    onToggleGeometry: () =>
+      setState({ geometry: getState().geometry === 'circle' ? 'square' : 'circle' }),
+  });
+
+  // Swap the slider's resonance ticks when the instrument changes.
+  let prevGeometry = getState().geometry;
+  subscribe((s) => {
+    if (s.geometry !== prevGeometry) {
+      prevGeometry = s.geometry;
+      rail.setResonances(s.geometry === 'circle' ? circleRes : squareRes);
+    }
   });
 
   // React to audio-relevant state transitions.
@@ -174,7 +193,7 @@ function boot(): void {
     // Gentle gravitation toward the nearest resonance once the user pauses.
     // Suppressed after a played note so the keyboard stays in tune.
     if (s.mode === 'tone' && allowGravitation && now - lastInputAt > 150) {
-      const r = nearestResonance(resonances, s.frequency);
+      const r = nearestResonance(activeRes(), s.frequency);
       const gap = r - s.frequency;
       if (Math.abs(gap) > 0.04 && Math.abs(gap) < GRAV_WINDOW) {
         setFrequency(s.frequency + gap * Math.min(1, GRAV_EASE * dtScale));
@@ -226,6 +245,7 @@ function boot(): void {
       rail.voice.setVoice(vs);
     }
 
+    const field = activeField();
     field.setFrequency(getState().frequency);
     if (field.dominant) {
       const d = getState().dominant;
@@ -237,7 +257,7 @@ function boot(): void {
 
     const baseMotion = voiceSilent ? 0 : s.reducedMotion ? 0.45 : 1;
     const motion = baseMotion + (s.reducedMotion ? 0 : kickBoost);
-    grains.update(field, dtScale, motion);
+    grains.update(field, dtScale, motion, s.geometry === 'circle' ? 'circle' : 'square');
     renderer.draw(grains.pos, grains.speed, grains.count, !s.reducedMotion);
 
     fpsAccum += dtMs;
@@ -273,7 +293,7 @@ function boot(): void {
         return voiceInput ? { ...voiceInput.state, status: voiceInput.status } : null;
       },
       signaturePNG(word: string) {
-        return renderSignature(word, modes).toDataURL('image/png');
+        return renderSignature(word, squareModes).toDataURL('image/png');
       },
     };
   }

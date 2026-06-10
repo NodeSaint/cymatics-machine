@@ -23,12 +23,16 @@ export interface RailOptions {
   onPerformSignature: (word: string) => void;
   /** Export the reproducible signature PNG for a word. */
   onExportSignature: (word: string) => void;
+  /** Switch between the square and circular plate. */
+  onToggleGeometry: () => void;
 }
 
 export interface RailHandle {
   keyboard: KeyboardHandle;
   voice: VoicePanelHandle;
   signature: SignaturePanelHandle;
+  /** Redraw the slider's resonance ticks (e.g. when the instrument changes). */
+  setResonances: (freqs: number[]) => void;
 }
 
 // Modes implemented so far; others render as forthcoming.
@@ -52,13 +56,19 @@ export function buildRail(root: HTMLElement, opts: RailOptions): RailHandle {
   );
 
   const controls = el('div', 'rail__controls');
+
+  const geomBtn = document.createElement('button');
+  geomBtn.type = 'button';
+  geomBtn.className = 'rail__icon rail__geom';
+  geomBtn.addEventListener('click', opts.onToggleGeometry);
+
   const soundBtn = document.createElement('button');
   soundBtn.type = 'button';
   soundBtn.className = 'rail__icon rail__sound';
   soundBtn.addEventListener('click', opts.onToggleSound);
 
   const explainer = createExplainer();
-  controls.append(soundBtn, explainer.button);
+  controls.append(geomBtn, soundBtn, explainer.button);
   header.append(titleWrap, controls);
 
   // ── Mode selector ─────────────────────────────────────────────────────
@@ -89,12 +99,16 @@ export function buildRail(root: HTMLElement, opts: RailOptions): RailHandle {
   // ── Slider with resonance ticks ───────────────────────────────────────
   const sliderWrap = el('div', 'rail__slider');
   const ticks = el('div', 'rail__ticks');
-  for (const f of opts.resonances) {
-    const tick = el('span', 'rail__tick');
-    tick.style.left = `${pct(f)}%`;
-    tick.title = `resonance ≈ ${f} Hz`;
-    ticks.append(tick);
-  }
+  const renderTicks = (freqs: number[]) => {
+    ticks.innerHTML = '';
+    for (const f of freqs) {
+      const tick = el('span', 'rail__tick');
+      tick.style.left = `${pct(f)}%`;
+      tick.title = `resonance ≈ ${f} Hz`;
+      ticks.append(tick);
+    }
+  };
+  renderTicks(opts.resonances);
   const slider = document.createElement('input');
   slider.type = 'range';
   slider.min = String(F_MIN);
@@ -145,9 +159,14 @@ export function buildRail(root: HTMLElement, opts: RailOptions): RailHandle {
     voice.el.style.display = s.mode === 'voice' ? '' : 'none';
     voice.setStatus(s.micStatus);
     signature.el.style.display = s.mode === 'signature' ? '' : 'none';
+
+    const circle = s.geometry === 'circle';
+    geomBtn.textContent = circle ? '○ circle' : '□ square';
+    geomBtn.title = circle ? 'Circular Bessel plate — switch to square' : 'Square plate — switch to circular';
+    geomBtn.classList.toggle('is-circle', circle);
   });
 
-  return { keyboard, voice, signature };
+  return { keyboard, voice, signature, setResonances: renderTicks };
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(
