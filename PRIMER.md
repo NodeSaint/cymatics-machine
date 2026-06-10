@@ -47,7 +47,7 @@ genuine explainer (nodal lines, why sand gathers, what (n,m) means, what is appr
 
 ## Build order & status
 
-1. ✅ Field + grains + slider.   2. ✅ Tone mode.   3. ✅ Composition.   4. ⬜ Voice.   5. ⬜ Sonic Signature.   6. ⬜ Circle plate (stretch).
+1. ✅ Field + grains + slider.   2. ✅ Tone mode.   3. ✅ Composition.   4. ✅ Voice.   5. ⬜ Sonic Signature.   6. ⬜ Circle plate (stretch).
 
 ## Acceptance
 
@@ -58,32 +58,28 @@ genuine explainer (nodal lines, why sand gathers, what (n,m) means, what is appr
 - Identical word → pixel-stable identical Signature PNG across machines.
 - Offline-capable after first load.
 
-## Session note — 2026-06-10 (paused mid Step 4)
+## Session note — 2026-06-10 (Steps 1–4 done)
 
-Steps 1–3 are live at https://nodesaint.github.io/cymatics-machine/ (committed, merged to `main`,
-deployed, verified in production). Repo is `NodeSaint/cymatics-machine` (the spec's `nuvixstudio`
-owner doesn't exist on GitHub under this login — user confirmed NodeSaint).
+Steps 1–4 are live at https://nodesaint.github.io/cymatics-machine/ (committed, merged to `main`,
+deployed, verified). Repo is `NodeSaint/cymatics-machine` (the spec's `nuvixstudio` owner doesn't
+exist on GitHub under this login — user confirmed NodeSaint).
 
-**Step 4 (Voice) is code-complete and builds clean, committed to `dev` as WIP (not deployed):**
-`src/audio/pitch.ts` (autocorrelation + clarity), `src/audio/voice.ts` (mic, confidence gate,
-silence→freeze), `src/ui/voicePanel.ts` (listening/denial UI), wired into main/rail/store.
+**Next: Step 5 — Sonic Signature + PNG export.** Up to 12 chars → deterministic, hand-tuned
+letter→frequency table → ~8 s performed morph → hold final figure → export a pixel-stable 1080×1080
+PNG stamped with the word, the frequency sequence, and "CYMATICS MACHINE". Same word ⇒ identical PNG
+everywhere (pure, seeded path — no `Math.random`/time in the render). WebM capture is a stretch.
+Then Step 6 (circular Bessel plate, stretch). Add `signature` to `READY_MODES` + rail MODES.
 
-**Blocker to resolve first thing:** the headless fake-mic verification shows `level: 0` (analyser
-reads silence) so the pitch test can't confirm end-to-end. The detector itself is correct (reported
-220 Hz, 0 cents when audio flowed). This is a *test-harness* issue, not proven app logic:
-- Next: probe `window.__cym.audioState` + sample `window.__cym.voice.level` over ~3 s in Voice mode.
-- Suspect the `--use-file-for-fake-audio-capture` flag (clean the messy `.replace('%noloop','')`
-  in `tools/voice.mjs`) or the AudioContext not running. WAVs at `/tmp/tone220.wav`,
-  `/tmp/tone440.wav` (48 kHz mono 16-bit). Verify the analyser graph is pulled
-  (source→analyser→sink(0)→destination) and the context is resumed.
-- Once green: commit/merge/deploy Step 4.
-
-**Then:** Step 5 (Sonic Signature + PNG export — deterministic letter→freq table, ~8 s morph, hold,
-pixel-stable 1080² PNG), Step 6 (circular Bessel plate, stretch).
+**Verification note (carry forward):** headless Chrome can't feed a fake mic into a
+MediaStreamSource (reads silence), but the analyser path is proven via an OscillatorNode and the
+detector via real buffers — so Voice is verified by unit tests + the denial branch, not a live mic.
+For Signature, determinism is checkable headlessly: render the same word twice and byte-compare the
+exported PNGs (CDP can read the canvas data URL).
 
 Verification tooling (all headless/silent — null audio sink): `tools/convergence.ts` (grains),
 `tools/drive.mjs` (Tone via CDP), `tools/sync.ts` (beat-sync, 24/24 within a frame),
-`tools/composition.mjs`, `tools/voice.mjs` (fake-mic — needs the flag fix above).
+`tools/composition.mjs`, `tools/pitch.ts` (Voice DSP unit tests). The `?f=` query param sets the
+initial frequency. Dev hook `window.__cym` exposes `state`, `audioState`, `compLags`, `voice` (DEV only).
 
 ## Source map
 

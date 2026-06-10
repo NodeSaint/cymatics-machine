@@ -4,6 +4,20 @@ All notable changes to the Cymatics Machine. Dates are ISO (YYYY-MM-DD). British
 
 ## [Unreleased] — dev
 
+### 2026-06-10 — `dev` → `main` — Step 4: Voice mode
+
+- **Autocorrelation pitch detection** (`audio/pitch.ts`): full ACF, first-trough skip to avoid the
+  zero-lag shoulder, parabolic interpolation, clarity (confidence) measure, RMS silence gate.
+- **Voice input** (`audio/voice.ts`): mic via getUserMedia tapped through a muted analyser (no
+  output/feedback); confidence gate holds the last stable frequency below threshold; silence reports
+  `silent` so the figure freezes. Permission requested only when Voice mode opens.
+- **Voice panel** (`ui/voicePanel.ts`): listening status, confidence + level meters, and a graceful
+  denial state with a "Try again" button.
+- Verified: DSP unit tests (`tools/pitch.ts`) — accurate to ≤11 cents across 110–880 Hz, silence
+  gate, and gate/smoothing (tracks → holds on silence → glides on resume). Denial branch verified in
+  browser (micStatus → denied, graceful UI). Note: fake-mic→analyser data flow is not testable in
+  headless Chrome, but the analyser path is proven via an oscillator and the detector via real buffers.
+
 ### 2026-06-10 — `dev` → `main` — Step 3: Composition mode
 
 - **Lookahead scheduler** (`audio/scheduler.ts`): a coarse timer queues each step with a

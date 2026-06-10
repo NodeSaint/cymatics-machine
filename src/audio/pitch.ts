@@ -24,51 +24,43 @@ export function detectPitch(buf: Float32Array, sampleRate: number): PitchResult 
   const rms = Math.sqrt(sumSq / size);
   if (rms < SILENCE_RMS) return { freq: -1, clarity: 0, rms };
 
-  const minLag = Math.max(2, Math.floor(sampleRate / MAX_F));
   const maxLag = Math.min(size - 2, Math.floor(sampleRate / MIN_F));
+  const minLag = Math.max(2, Math.floor(sampleRate / MAX_F));
 
-  // Zero-lag energy (autocorrelation at lag 0).
-  let energy = 0;
-  for (let j = 0; j < size; j++) energy += buf[j] * buf[j];
-  if (energy === 0) return { freq: -1, clarity: 0, rms };
-
-  let bestLag = -1;
-  let bestCorr = 0;
-  let prev = 0;
-  let descending = false; // wait until past the initial peak before accepting
-
-  for (let lag = minLag; lag <= maxLag; lag++) {
+  // Full autocorrelation c[0..maxLag].
+  const c = new Float32Array(maxLag + 1);
+  for (let lag = 0; lag <= maxLag; lag++) {
     let corr = 0;
     for (let j = 0; j < size - lag; j++) corr += buf[j] * buf[j + lag];
+    c[lag] = corr;
+  }
+  const energy = c[0];
+  if (energy === 0) return { freq: -1, clarity: 0, rms };
 
-    // Only consider local maxima after the autocorrelation first descends —
-    // avoids latching onto the broad zero-lag shoulder.
-    if (!descending && corr < prev) descending = true;
-    if (descending && corr > bestCorr) {
-      bestCorr = corr;
+  // Skip past the zero-lag shoulder to the first trough, then take the highest
+  // peak — that lag is the fundamental period.
+  let d = 0;
+  while (d < maxLag && c[d] > c[d + 1]) d++;
+
+  let bestLag = d;
+  let bestCorr = c[d];
+  for (let lag = d; lag <= maxLag; lag++) {
+    if (c[lag] > bestCorr) {
+      bestCorr = c[lag];
       bestLag = lag;
     }
-    prev = corr;
   }
-
-  if (bestLag < 0) return { freq: -1, clarity: 0, rms };
+  if (bestLag < minLag || bestLag >= maxLag) return { freq: -1, clarity: 0, rms };
 
   // Parabolic interpolation around the peak for sub-sample precision.
-  const c1 = acf(buf, size, bestLag - 1);
+  const c1 = c[bestLag - 1];
   const c2 = bestCorr;
-  const c3 = acf(buf, size, bestLag + 1);
+  const c3 = c[bestLag + 1];
   const a = (c1 + c3 - 2 * c2) / 2;
   const b = (c3 - c1) / 2;
-  const refined = a !== 0 ? bestLag - b / (2 * a) : bestLag;
+  const refined = a < 0 ? bestLag - b / (2 * a) : bestLag;
 
   const clarity = Math.max(0, Math.min(1, bestCorr / energy));
   const freq = sampleRate / refined;
   return { freq, clarity, rms };
-}
-
-function acf(buf: Float32Array, size: number, lag: number): number {
-  if (lag < 0 || lag >= size) return 0;
-  let corr = 0;
-  for (let j = 0; j < size - lag; j++) corr += buf[j] * buf[j + lag];
-  return corr;
 }

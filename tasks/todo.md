@@ -26,8 +26,9 @@ visually confirmed in production. Owner is `NodeSaint` (spec's `nuvixstudio` doe
 - [x] Lookahead scheduler; synth voices; melody retune; kick jolts; sidechain.
 - [x] Verified: 24/24 events within one frame (tools/sync.ts); browser run confirms retune + kicks.
 
-## Step 4 — Voice
-- [ ] getUserMedia; autocorrelation + confidence gate; meter; graceful denial; silence freeze.
+## Step 4 — Voice  ✅
+- [x] getUserMedia; autocorrelation + confidence gate; meter; graceful denial; silence freeze.
+- [x] Verified: DSP unit tests (tools/pitch.ts, ≤11 cents 110-880 Hz); denial branch in browser.
 
 ## Step 5 — Sonic Signature + PNG export
 - [ ] Letter→freq table; ~8 s morph; hold; pixel-stable 1080² PNG export.
