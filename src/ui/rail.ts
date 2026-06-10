@@ -1,25 +1,76 @@
-// The instrument rail — frequency slider with resonance ticks, the live readout,
-// and a quiet diagnostics line. Silent in Step 1; Tone mode wires audio in later.
+// The instrument rail — sound toggle, explainer, mode selector, frequency slider
+// with resonance ticks, the live readout, the one-octave keyboard, and a quiet
+// diagnostics line.
 
 import { F_MIN, F_MAX } from '../physics/modes';
-import { getState, subscribe, setFrequency } from '../store';
+import { getState, subscribe, setFrequency, setState, type DriveMode } from '../store';
+import { createExplainer } from './explainer';
+import { buildKeyboard, type KeyboardHandle } from './keyboard';
 
-export interface RailHandles {
-  /** Pull the live frequency toward the nearest resonance ('gravitation'). */
-  setGravitation(on: boolean): void;
+export interface RailOptions {
+  resonances: number[];
+  /** Play a note: set frequency and ensure sound is on. */
+  onNote: (freq: number) => void;
+  /** Toggle sound on/off (handles the AudioContext gesture). */
+  onToggleSound: () => void;
+  /** Fired when the user moves the slider (enables resonance gravitation). */
+  onSliderInput: () => void;
 }
 
-export function buildRail(root: HTMLElement, resonances: number[]): RailHandles {
-  root.innerHTML = '';
+export interface RailHandle {
+  keyboard: KeyboardHandle;
+}
 
+// Modes implemented so far; others render as forthcoming.
+const MODES: Array<{ id: DriveMode; label: string; ready: boolean }> = [
+  { id: 'tone', label: 'Tone', ready: true },
+  { id: 'composition', label: 'Composition', ready: false },
+  { id: 'voice', label: 'Voice', ready: false },
+  { id: 'signature', label: 'Signature', ready: false },
+];
+
+export function buildRail(root: HTMLElement, opts: RailOptions): RailHandle {
+  root.innerHTML = '';
   const pct = (f: number) => ((f - F_MIN) / (F_MAX - F_MIN)) * 100;
 
-  // ── Header ────────────────────────────────────────────────────────────
+  // ── Header: title, sound toggle, explainer ────────────────────────────
   const header = el('div', 'rail__header');
-  header.append(
+  const titleWrap = el('div', 'rail__titlewrap');
+  titleWrap.append(
     el('h1', 'rail__title', 'CYMATICS MACHINE'),
     el('p', 'rail__subtitle', 'Sand finds the nodal lines.'),
   );
+
+  const controls = el('div', 'rail__controls');
+  const soundBtn = document.createElement('button');
+  soundBtn.type = 'button';
+  soundBtn.className = 'rail__icon rail__sound';
+  soundBtn.addEventListener('click', opts.onToggleSound);
+
+  const explainer = createExplainer();
+  controls.append(soundBtn, explainer.button);
+  header.append(titleWrap, controls);
+
+  // ── Mode selector ─────────────────────────────────────────────────────
+  const modeBar = el('div', 'rail__modes');
+  modeBar.setAttribute('role', 'tablist');
+  const modeButtons = new Map<DriveMode, HTMLButtonElement>();
+  for (const m of MODES) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'rail__mode';
+    b.textContent = m.label;
+    b.setAttribute('role', 'tab');
+    if (!m.ready) {
+      b.disabled = true;
+      b.title = 'Coming soon';
+      b.classList.add('is-soon');
+    } else {
+      b.addEventListener('click', () => setState({ mode: m.id }));
+    }
+    modeButtons.set(m.id, b);
+    modeBar.append(b);
+  }
 
   // ── Readout ───────────────────────────────────────────────────────────
   const readout = el('output', 'rail__readout');
@@ -28,7 +79,7 @@ export function buildRail(root: HTMLElement, resonances: number[]): RailHandles 
   // ── Slider with resonance ticks ───────────────────────────────────────
   const sliderWrap = el('div', 'rail__slider');
   const ticks = el('div', 'rail__ticks');
-  for (const f of resonances) {
+  for (const f of opts.resonances) {
     const tick = el('span', 'rail__tick');
     tick.style.left = `${pct(f)}%`;
     tick.title = `resonance ≈ ${f} Hz`;
@@ -39,33 +90,45 @@ export function buildRail(root: HTMLElement, resonances: number[]): RailHandles 
   slider.min = String(F_MIN);
   slider.max = String(F_MAX);
   slider.step = '1';
-  slider.value = String(getState().frequency);
+  slider.value = String(Math.round(getState().frequency));
   slider.className = 'rail__range';
   slider.setAttribute('aria-label', 'Driving frequency in hertz');
-  slider.addEventListener('input', () => setFrequency(Number(slider.value)));
+  slider.addEventListener('input', () => {
+    setFrequency(Number(slider.value));
+    opts.onSliderInput();
+  });
   sliderWrap.append(ticks, slider);
 
   const scale = el('div', 'rail__scale');
   scale.append(el('span', '', `${F_MIN} Hz`), el('span', '', `${F_MAX} Hz`));
 
+  // ── Keyboard (Tone mode) ──────────────────────────────────────────────
+  const keyboard = buildKeyboard((freq) => opts.onNote(freq));
+  const kbdPanel = el('div', 'rail__kbd');
+  kbdPanel.append(keyboard.el);
+
   // ── Diagnostics ───────────────────────────────────────────────────────
   const diag = el('div', 'rail__diag');
 
-  root.append(header, readout, sliderWrap, scale, diag);
+  root.append(header, modeBar, readout, sliderWrap, scale, kbdPanel, diag);
 
-  // ── Live updates from the store ───────────────────────────────────────
+  // ── Live updates ──────────────────────────────────────────────────────
   subscribe((s) => {
     if (document.activeElement !== slider) slider.value = String(Math.round(s.frequency));
     const modeLabel = s.dominant ? `mode (${s.dominant.n},${s.dominant.m})` : 'mode …';
     readout.textContent = `f = ${Math.round(s.frequency)} Hz · ${modeLabel}`;
     diag.textContent = `${s.renderer} · ${s.fps.toFixed(0)} fps`;
+
+    soundBtn.textContent = s.audioOn ? '♪ on' : '♪ off';
+    soundBtn.classList.toggle('is-on', s.audioOn);
+    soundBtn.setAttribute('aria-pressed', String(s.audioOn));
+    soundBtn.title = s.audioOn ? 'Sound on — click to mute' : 'Sound off — click to play';
+
+    for (const [id, b] of modeButtons) b.classList.toggle('is-active', id === s.mode);
+    kbdPanel.style.display = s.mode === 'tone' ? '' : 'none';
   });
 
-  return {
-    setGravitation: () => {
-      /* wired in Tone mode */
-    },
-  };
+  return { keyboard };
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(

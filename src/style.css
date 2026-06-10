@@ -80,10 +80,91 @@ canvas#plate {
 
 .rail__header {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.rail__titlewrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rail__controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.rail__icon {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink);
+  background: #1a1a1e;
+  border: 1px solid var(--panel-edge);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.rail__icon:hover {
+  border-color: var(--brass-2);
+  color: var(--sand);
+}
+
+.rail__icon:focus-visible {
+  outline: 2px solid rgba(231, 200, 130, 0.5);
+  outline-offset: 1px;
+}
+
+.rail__sound.is-on {
+  color: var(--amber);
+  border-color: var(--brass-2);
+  background: #221c12;
+}
+
+/* mode selector */
+.rail__modes {
+  display: flex;
+  gap: 4px;
+  background: #0e0e11;
+  border: 1px solid var(--panel-edge);
+  border-radius: 7px;
+  padding: 3px;
+}
+
+.rail__mode {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  padding: 7px 4px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.rail__mode:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.rail__mode.is-active {
+  color: #14110a;
+  background: linear-gradient(var(--brass-3), var(--brass-2));
+  font-weight: 600;
+}
+
+.rail__mode.is-soon {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .rail__title {
@@ -181,8 +262,149 @@ canvas#plate {
   text-align: right;
 }
 
+/* ── One-octave keyboard ───────────────────────────────────────────────── */
+.rail__kbd {
+  margin-top: 2px;
+}
+
+.kbd {
+  position: relative;
+  height: 76px;
+  width: 100%;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.kbd__key {
+  position: absolute;
+  top: 0;
+  padding: 0;
+  border: 1px solid #000;
+  cursor: pointer;
+  font-family: var(--mono);
+}
+
+.kbd__key--white {
+  height: 100%;
+  background: linear-gradient(#e7ddc6, #cdbf9e);
+  border-radius: 0 0 4px 4px;
+  box-shadow: inset 0 -6px 8px -6px rgba(0, 0, 0, 0.4);
+}
+
+.kbd__key--white:active,
+.kbd__key--white.is-active {
+  background: linear-gradient(var(--amber), #d98f33);
+}
+
+.kbd__key--black {
+  height: 62%;
+  width: 1.7em;
+  background: linear-gradient(#2a2722, #0d0c0a);
+  border-radius: 0 0 3px 3px;
+  z-index: 2;
+  box-shadow: 0 3px 4px rgba(0, 0, 0, 0.6);
+}
+
+.kbd__key--black:active,
+.kbd__key--black.is-active {
+  background: linear-gradient(#a8721f, #6b4a12);
+}
+
+/* ── Explainer dialog ──────────────────────────────────────────────────── */
+.explain {
+  border: 1px solid var(--panel-edge);
+  border-radius: 10px;
+  background: linear-gradient(var(--panel), #0d0d10);
+  color: var(--ink);
+  max-width: min(640px, 92vw);
+  padding: 0;
+  box-shadow: 0 30px 80px -24px rgba(0, 0, 0, 0.9);
+}
+
+.explain::backdrop {
+  background: rgba(4, 4, 6, 0.62);
+  backdrop-filter: blur(2px);
+}
+
+.explain__body {
+  padding: 22px 26px 28px;
+  font-size: 14px;
+  line-height: 1.62;
+}
+
+.explain__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.explain__body h2 {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: 0.1em;
+  color: var(--sand);
+}
+
+.explain__body h3 {
+  margin: 20px 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brass-3);
+}
+
+.explain__body p {
+  margin: 8px 0;
+  color: var(--ink);
+}
+
+.explain__body code,
+.explain__body kbd {
+  font-family: var(--mono);
+  font-size: 0.92em;
+  color: var(--sand);
+  background: #000;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--panel-edge);
+}
+
+.explain__eq {
+  text-align: center;
+  font-size: 15px;
+  padding: 6px 0;
+}
+
+.explain__eq code {
+  background: transparent;
+  border: 0;
+  color: var(--amber);
+}
+
+.explain__close {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--ink-dim);
+  background: transparent;
+  border: 1px solid var(--panel-edge);
+  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+}
+
+.explain__close:hover {
+  color: var(--sand);
+  border-color: var(--brass-2);
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     scroll-behavior: auto;
+  }
+  .explain::backdrop {
+    backdrop-filter: none;
   }
 }

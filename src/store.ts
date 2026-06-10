@@ -11,6 +11,8 @@ export interface State {
   mode: DriveMode;
   /** Dominant mode indices for the readout, or null before first build. */
   dominant: { n: number; m: number } | null;
+  /** Whether sound is enabled (requires a user gesture to start the AudioContext). */
+  audioOn: boolean;
   /** prefers-reduced-motion — lowers jitter, disables glow pulse. */
   reducedMotion: boolean;
   /** Renderer in use, for the diagnostics line. */
@@ -25,6 +27,7 @@ const state: State = {
   frequency: 432,
   mode: 'tone',
   dominant: null,
+  audioOn: false,
   reducedMotion:
     typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches,
   renderer: 'webgl',
