@@ -1,0 +1,20 @@
+{
+  "name": "cymatics-machine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A real Chladni plate in the browser, driven by tone, song, or voice.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

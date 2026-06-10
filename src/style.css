@@ -1,0 +1,188 @@
+/* Cymatics Machine — laboratory instrument, not rave.
+   Near-black anodised plate, brass bezel, warm sand, one monospace voice. */
+
+:root {
+  --bg: #0a0a0b;
+  --panel: #131316;
+  --panel-edge: #26241f;
+  --ink: #cdbf9e; /* warm sand text */
+  --ink-dim: #7c7666;
+  --sand: #e8d5a8;
+  --amber: #ffb24d;
+  --brass-1: #6b5836;
+  --brass-2: #b69256;
+  --brass-3: #e7c882;
+  --plate: #0a0a0b;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  --plate-size: min(86vmin, 66vh);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--mono);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+body {
+  /* faint vignette + brushed warmth, so the plate sits in a real instrument */
+  background:
+    radial-gradient(120% 100% at 50% 0%, #121116 0%, var(--bg) 60%) fixed;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(14px, 2.6vh, 28px);
+  min-height: 100dvh;
+  padding: clamp(16px, 3vh, 36px);
+}
+
+/* ── The plate ─────────────────────────────────────────────────────────── */
+canvas#plate {
+  width: var(--plate-size);
+  height: var(--plate-size);
+  display: block;
+  background: var(--plate);
+  border-radius: 8px;
+  /* brass bezel */
+  border: 10px solid transparent;
+  border-image: linear-gradient(135deg, var(--brass-3), var(--brass-1) 38%, var(--brass-2) 70%, var(--brass-3)) 1;
+  box-shadow:
+    0 0 0 1px #000,
+    0 14px 40px -12px rgba(0, 0, 0, 0.85),
+    inset 0 0 60px -20px rgba(0, 0, 0, 0.9);
+  touch-action: none;
+}
+
+/* ── The rail ──────────────────────────────────────────────────────────── */
+#rail {
+  width: var(--plate-size);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px 18px;
+  background: linear-gradient(var(--panel), #0f0f12);
+  border: 1px solid var(--panel-edge);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px -16px rgba(0, 0, 0, 0.8);
+}
+
+.rail__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rail__title {
+  margin: 0;
+  font-size: clamp(13px, 1.6vw, 16px);
+  letter-spacing: 0.34em;
+  font-weight: 600;
+  color: var(--sand);
+}
+
+.rail__subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-dim);
+  letter-spacing: 0.04em;
+}
+
+.rail__readout {
+  font-size: clamp(15px, 2.4vw, 20px);
+  letter-spacing: 0.06em;
+  color: var(--amber);
+}
+
+/* slider + resonance ticks */
+.rail__slider {
+  position: relative;
+  padding-top: 12px;
+}
+
+.rail__ticks {
+  position: absolute;
+  inset: 0 6px auto 6px;
+  height: 12px;
+  pointer-events: none;
+}
+
+.rail__tick {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 8px;
+  background: var(--brass-2);
+  opacity: 0.55;
+  transform: translateX(-0.5px);
+}
+
+.rail__range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #2a2a30, #3a382f);
+  outline: none;
+  margin: 6px 0 0;
+}
+
+.rail__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--brass-3), var(--brass-1));
+  border: 1px solid #1a1610;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+}
+
+.rail__range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--brass-3), var(--brass-1));
+  border: 1px solid #1a1610;
+  cursor: pointer;
+}
+
+.rail__range:focus-visible {
+  box-shadow: 0 0 0 2px rgba(231, 200, 130, 0.5);
+}
+
+.rail__scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--ink-dim);
+  letter-spacing: 0.06em;
+}
+
+.rail__diag {
+  font-size: 11px;
+  color: var(--ink-dim);
+  letter-spacing: 0.08em;
+  text-align: right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto;
+  }
+}
