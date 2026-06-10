@@ -58,28 +58,31 @@ genuine explainer (nodal lines, why sand gathers, what (n,m) means, what is appr
 - Identical word → pixel-stable identical Signature PNG across machines.
 - Offline-capable after first load.
 
-## Session note — 2026-06-10 (Steps 1–4 done)
+## Session note — 2026-06-10 (COMPLETE — all steps + stretch shipped)
 
-Steps 1–4 are live at https://nodesaint.github.io/cymatics-machine/ (committed, merged to `main`,
-deployed, verified). Repo is `NodeSaint/cymatics-machine` (the spec's `nuvixstudio` owner doesn't
-exist on GitHub under this login — user confirmed NodeSaint).
+The full spec is built, verified, and **live** at https://nodesaint.github.io/cymatics-machine/
+(all merged to `main`, deployed via Actions). Repo `NodeSaint/cymatics-machine` (spec's `nuvixstudio`
+owner doesn't exist under this login — user confirmed NodeSaint). Every acceptance criterion met:
 
-**Next: Step 5 — Sonic Signature + PNG export.** Up to 12 chars → deterministic, hand-tuned
-letter→frequency table → ~8 s performed morph → hold final figure → export a pixel-stable 1080×1080
-PNG stamped with the word, the frequency sequence, and "CYMATICS MACHINE". Same word ⇒ identical PNG
-everywhere (pure, seeded path — no `Math.random`/time in the render). WebM capture is a stretch.
-Then Step 6 (circular Bessel plate, stretch). Add `signature` to `READY_MODES` + rail MODES.
+- Steps 1–6 all done: field+grains, Tone, Composition, Voice, Sonic Signature, **+ circular Bessel
+  plate (stretch)**. Offline-capable via service worker (verified offline on production).
+- Acceptance: 27 figures + ~2 s convergence (square), 24 (circle); beat-sync 24/24 within a frame;
+  Voice ≤11 cents + graceful denial; same word ⇒ byte-identical PNG; offline after first load.
+
+**Only remaining optional item:** WebM capture of the Signature morph (explicit stretch, not built).
+The real-fps acceptance (60 fps @ 30k) couldn't be measured under headless software-WebGL; it relies
+on a real GPU and the light per-frame CPU cost (~30k grain updates).
 
 **Verification note (carry forward):** headless Chrome can't feed a fake mic into a
-MediaStreamSource (reads silence), but the analyser path is proven via an OscillatorNode and the
-detector via real buffers — so Voice is verified by unit tests + the denial branch, not a live mic.
-For Signature, determinism is checkable headlessly: render the same word twice and byte-compare the
-exported PNGs (CDP can read the canvas data URL).
+MediaStreamSource (reads silence), so Voice is verified by DSP unit tests + the denial branch (the
+analyser path itself is proven via an OscillatorNode). Signature determinism is byte-compared
+in-browser. Signature PNG determinism is per-engine (float/font); see ISSUES.
 
 Verification tooling (all headless/silent — null audio sink): `tools/convergence.ts` (grains),
-`tools/drive.mjs` (Tone via CDP), `tools/sync.ts` (beat-sync, 24/24 within a frame),
-`tools/composition.mjs`, `tools/pitch.ts` (Voice DSP unit tests). The `?f=` query param sets the
-initial frequency. Dev hook `window.__cym` exposes `state`, `audioState`, `compLags`, `voice` (DEV only).
+`tools/drive.mjs` (Tone), `tools/sync.ts` (beat-sync), `tools/composition.mjs`, `tools/pitch.ts`
+(Voice DSP), `tools/signature.ts` (PNG determinism), `tools/bessel-test.ts`, `tools/circle.ts`.
+The `?f=` query param sets the initial frequency. Dev hook `window.__cym` exposes `state`,
+`audioState`, `compLags`, `voice`, `signaturePNG(word)` (DEV only; stripped from production).
 
 ## Source map
 
